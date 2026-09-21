@@ -1,0 +1,9 @@
+.build/
+work/
+DerivedData/
+.DS_Store
+*.xcuserstate
+*.mp4
+*.mov
+*.m4v
+*.mkv
