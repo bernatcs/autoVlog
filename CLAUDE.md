@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-VlogForge (repo/app also called AutoVlogs): a macOS 13+ AppKit app that turns a folder of videos/photos into a short chronological vlog MP4. SwiftPM package, one executable target, no external Swift dependencies. UI strings, prompts, error messages and README are in Spanish — keep new user-facing text in Spanish.
+AutoVlogs: a macOS 13+ AppKit app that turns a folder of videos/photos into a short chronological vlog MP4. The user opens `AutoVlogs.app` at the repo root (gitignored, built by `./build-app.sh`). SwiftPM package/target and internal binary are still named `VlogForge` (also the `VLOGFORGE_*` env vars); the user-facing name is AutoVlogs. No external Swift dependencies. UI strings, prompts, error messages and README are in Spanish — keep new user-facing text in Spanish.
 
 Runtime tools (shelled out to, not linked):
 - **FFmpeg** (required) — looked up at `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`.
@@ -14,15 +14,12 @@ Runtime tools (shelled out to, not linked):
 ## Commands
 
 ```bash
-swift run                                   # launch the GUI
-swift build -c release                      # binary at .build/release/VlogForge
-.build/release/VlogForge --self-test /path/to/folder   # headless render → <folder>/vlogforge-self-test.mp4
+./build-app.sh                              # release build → AutoVlogs.app (what the user opens); run after every code change
+.build/release/VlogForge --self-test /path/to/folder [--ai]   # headless render → <folder>/vlogforge-self-test.mp4; --ai adds Whisper + Ollama
 .build/release/VlogForge --snapshot out.png [folder]    # render the window to a PNG (no Screen Recording permission needed) and quit
 ```
 
-There are no unit tests or linter. `--self-test` is the only automated check; add `--ai` as a 4th argument to also run Whisper + Ollama.
-
-`outputs/` holds committed, prebuilt artifacts (`outputs/VlogForge` binary, `VlogForge.app`, `AutoVlogs.app`, `Launch-AutoVlogs.command` which runs `outputs/VlogForge` and logs to `outputs/AutoVlogs.log`). There's no build script for them — after a release build, the binary is copied in by hand.
+There are no unit tests or linter; `--self-test` is the only automated check.
 
 ## Architecture
 

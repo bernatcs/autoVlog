@@ -132,10 +132,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         installMainMenu()
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 720, height: 600), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
-        window.title = "VlogForge"
+        window.title = "AutoVlogs"
         window.delegate = self
 
-        let heading = label("VlogForge", size: 28, weight: .bold)
+        let heading = label("AutoVlogs", size: 28, weight: .bold)
         let intro = label("Convierte una carpeta de vídeos y fotos en un vlog cronológico con su audio original.", size: 13, color: .secondaryLabelColor)
 
         dropView = DropView(frame: .zero)
@@ -316,7 +316,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let mainMenu = NSMenu()
         let appMenuItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "Salir de VlogForge", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Salir de AutoVlogs", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appMenuItem.submenu = appMenu
         mainMenu.addItem(appMenuItem)
         NSApp.mainMenu = mainMenu

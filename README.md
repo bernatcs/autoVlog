@@ -1,73 +1,54 @@
-# VlogForge
+# AutoVlogs
 
-MVP de aplicación de escritorio para macOS que convierte una carpeta de vídeos en un vlog cronológico corto.
+Convierte una carpeta de vídeos y fotos de un día en un vlog corto y cronológico, con los momentos importantes (risas, emociones, tonterías, momentos clave) y un texto por vídeo que cuenta lo que pasa.
 
-## Requisitos
+## Cómo usarla
 
-- macOS 13 o posterior
-- Xcode Command Line Tools (incluye Swift)
-- FFmpeg: `brew install ffmpeg`
-- Ollama es opcional para la selección inteligente. Instala un modelo local, por ejemplo: `ollama pull gemma3:4b` y deja Ollama ejecutándose.
-- Whisper es opcional para transcribir localmente el audio y ayudar a crear títulos más útiles.
+**Abre `AutoVlogs.app`** (doble clic), en esta misma carpeta. Es la única app.
 
-## Lanzar
+1. Arrastra la carpeta con el material (o haz clic en el recuadro para elegirla).
+2. Elige las opciones: duración del vlog, Ollama, Whisper, fecha y textos.
+3. Pulsa **Generar vlog**, elige dónde guardarlo y déjalo trabajar. La barra y el tiempo transcurrido muestran que sigue en marcha; con Whisper y Ollama tarda unos minutos.
 
-Desde esta carpeta:
+Si el material está en Google Drive, márcalo antes como disponible sin conexión.
 
-```bash
-swift run
-```
+## Qué necesita el Mac
 
-También se puede compilar un binario:
+- **FFmpeg** (obligatorio): `brew install ffmpeg`
+- **Ollama** (recomendado): la app de Ollama abierta, con un modelo de visión (`ollama pull qwen3-vl:8b`) para elegir momentos. Para la trama y los textos usa el modelo más grande que tengas instalado (ahora `gemma4:26b`).
+- **Whisper** (recomendado): `whisper.cpp` en `~/whisper.cpp` con el modelo `large-v3-turbo-q5_0`:
 
-```bash
-swift build -c release
-./.build/release/VlogForge
-```
+  ```bash
+  git clone https://github.com/ggml-org/whisper.cpp.git ~/whisper.cpp
+  cd ~/whisper.cpp
+  cmake -B build && cmake --build build -j --config Release
+  sh ./models/download-ggml-model.sh large-v3-turbo-q5_0
+  ```
 
-## Flujo actual
+La ventana indica en verde si Ollama y Whisper están listos. Sin ellos la app funciona igual, pero elige los momentos con un análisis más simple y no pone textos.
 
-1. Selecciona o arrastra una carpeta, elige las opciones y pulsa «Generar vlog»; a partir de ahí todo el proceso es automático.
-2. Se recorren subcarpetas y se ordenan vídeos y fotos por fecha de grabación (metadatos del vídeo o EXIF de la foto; si no existe, fecha de modificación).
-3. Se analiza cada vídeo (brillo y volumen, más las frases de Whisper) y se generan momentos candidatos: cada frase completa y ventanas de 5 s en las partes sin voz. Con Ollama, un modelo de visión puntúa cada candidato del 1 al 10 viendo inicio, medio y final del plano; se eligen los mejores hasta la duración elegida (1–10 min), como mucho 3 por vídeo y en orden cronológico. Las fotos duran 3 segundos cuando está activada la opción de incluirlas.
-4. Cada plano se normaliza usando la mayor resolución real del material, sin ampliar vídeos pequeños, y conserva su audio original si existe.
-5. Se unen los planos y se guarda el MP4 elegido.
+## Cómo elige los momentos
 
-La interfaz permite activar o desactivar por separado la marca de día y hora y el rótulo de cada clip. El modelo más grande instalado en Ollama deduce la trama principal del día, clasifica cada momento (risas, emoción, tonterías, momentos clave, recapitulaciones… y descarta lo técnico y el relleno) y escribe un texto por vídeo que resume lo que pasa en él dentro de la historia (se puede forzar con `VLOGFORGE_CAPTION_MODEL`); sin Ollama no se ponen rótulos.
+1. Ordena el material por fecha de grabación (metadatos del vídeo o EXIF de la foto).
+2. Whisper transcribe lo que se dice, incluidas las risas.
+3. Cada frase completa, más trozos de 5 s en las partes sin voz, es un momento candidato. Suben los que tienen voz, risas o volumen alto y bajan los oscuros.
+4. Ollama mira inicio, medio y final de cada candidato y lo puntúa y describe (descarta planos borrosos, del suelo, esperas).
+5. El modelo grande deduce la trama del día y clasifica cada momento: risa, emoción, tontería, momento clave, recapitulación… Lo técnico (hablar de la cámara, pruebas) y el relleno se descartan.
+6. Se eligen los mejores hasta la duración elegida, como mucho 3 por vídeo, y se escribe un texto por vídeo que resume lo que pasa en él dentro de la historia.
 
-Para habilitar Whisper local, compila `whisper.cpp` y descarga un modelo multilingüe. La aplicación prefiere automáticamente, por orden de calidad, `large-v3-turbo`, `large-v3`, `medium`, `small` y finalmente `base`:
+## Si se cambia el código
 
-```bash
-cd ~/whisper.cpp
-./models/download-ggml-model.sh large-v3-turbo-q5_0
-```
+Tras modificar `Sources/`, vuelve a generar la app:
 
 ```bash
-git clone https://github.com/ggml-org/whisper.cpp.git ~/whisper.cpp
-cd ~/whisper.cpp
-cmake -B build
-cmake --build build -j --config Release
-sh ./models/download-ggml-model.sh base
-export VLOGFORGE_WHISPER_BIN="$HOME/whisper.cpp/build/bin/whisper-cli"
-export VLOGFORGE_WHISPER_MODEL="$HOME/whisper.cpp/models/ggml-large-v3-turbo-q5_0.bin"
+./build-app.sh
 ```
 
-Después activa `Transcribir con Whisper` en VlogForge y elige el idioma: `Català + castellano` para material mezclado, o un idioma concreto si todo el vídeo está en una sola lengua. También hay opciones para inglés, chino, francés, italiano y portugués. El modelo `large-v3-turbo-q5_0` es bastante más preciso que `base`, especialmente con catalán y castellano, aunque tarda más. La transcripción se realiza en el Mac y se entrega a Ollama junto con los fotogramas y los tiempos de Whisper para mejorar la elección, los cortes y los títulos.
-
-El MVP no añade música, locución, efectos de sonido ni audio generado. Whisper, comprensión semántica y agrupación narrativa avanzada quedan como puntos de extensión posteriores.
-
-## Selección inteligente con Ollama
-
-Si está activada la opción “Usar Ollama local” y Ollama está activo en `127.0.0.1:11434`, VlogForge detecta el modelo local disponible. Procesa el material en lotes pequeños, usa la transcripción y los tiempos de Whisper, mantiene una estructura de inicio–nudo–desenlace y genera un título común para todos los clips del mismo archivo. Si no se usa Ollama o el modelo falla, utiliza el análisis local sin bloquear la exportación.
-
-Se puede forzar un modelo concreto:
+Opciones para desarrollo (el ejecutable interno se llama `VlogForge`):
 
 ```bash
-VLOGFORGE_OLLAMA_MODEL=gemma3:4b ./outputs/VlogForge
+.build/release/VlogForge --self-test /ruta/carpeta [--ai]   # genera el vlog sin abrir la ventana
+.build/release/VlogForge --snapshot captura.png [carpeta]  # guarda una captura de la ventana
 ```
 
-Para comprobar el render sin abrir la interfaz, se puede ejecutar:
-
-```bash
-.build/release/VlogForge --self-test /ruta/a/una/carpeta        # añade --ai para usar también Whisper y Ollama
-```
+Variables opcionales: `VLOGFORGE_OLLAMA_MODEL` (modelo de visión), `VLOGFORGE_CAPTION_MODEL` (modelo para trama y textos), `VLOGFORGE_WHISPER_BIN` y `VLOGFORGE_WHISPER_MODEL`.
